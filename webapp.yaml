@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp-deployment
+  labels:
+    app: webapp
+spec:
+  replicas: 1 # how many pods you want
+  selector:
+    matchLabels:
+      app: webapp # defines which pods belong to the deployment
+  template:
+    metadata:
+      labels: # is a required property for pod
+        app: webapp 
+    spec:
+      containers:
+      - name: webapp
+        image: nanajanashia/k8s-demo-app:v1.0
+        ports:
+        - containerPort: 3000
+        env:
+        - name: USER_NAME
+          valueFrom: # fetch secrect data from mongo-secret
+              secretKeyRef:
+                name: mongo-secret
+                key: mongo-user
+        - name: USER_PWD
+          valueFrom: 
+              secretKeyRef:
+                name: mongo-secret
+                key: mongo-password
+        - name: DB_URL
+          valueFrom: 
+              configMapKeyRef:
+                name: mongo-config
+                key: mongo-url
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+spec:
+  type: NodePort # specifies current service is an external service
+  selector: # select pods to forward the requests to
+    app: webapp
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+      nodePort: 30100 # expposes the Service on each Node's IP at a static port. 
+                      # It must be beteen 30000 - 32767 by K8s definition.
